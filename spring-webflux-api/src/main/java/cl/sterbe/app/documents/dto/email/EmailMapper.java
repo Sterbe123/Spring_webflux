@@ -1,4 +1,4 @@
-package cl.sterbe.app.documents.entity.email;
+package cl.sterbe.app.documents.dto.email;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;

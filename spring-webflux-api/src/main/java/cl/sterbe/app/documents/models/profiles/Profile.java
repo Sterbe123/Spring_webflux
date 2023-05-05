@@ -1,6 +1,6 @@
 package cl.sterbe.app.documents.models.profiles;
 
-import cl.sterbe.app.documents.entity.profiles.ContactInformation;
+import cl.sterbe.app.documents.dto.profiles.ContactInformation;
 import cl.sterbe.app.documents.models.friends.Friend;
 import cl.sterbe.app.documents.models.multimedias.Photo;
 import cl.sterbe.app.documents.models.multimedias.Video;

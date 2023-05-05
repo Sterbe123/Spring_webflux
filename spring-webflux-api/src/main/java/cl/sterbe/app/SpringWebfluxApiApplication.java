@@ -1,10 +1,10 @@
 package cl.sterbe.app;
 
 import cl.sterbe.app.documents.dao.users.RoleDAO;
-import cl.sterbe.app.documents.entity.profiles.ContactInformation;
-import cl.sterbe.app.documents.entity.profiles.Employment;
-import cl.sterbe.app.documents.entity.profiles.Home;
-import cl.sterbe.app.documents.entity.profiles.Lenguage;
+import cl.sterbe.app.documents.dto.profiles.ContactInformation;
+import cl.sterbe.app.documents.dto.profiles.Employment;
+import cl.sterbe.app.documents.dto.profiles.Home;
+import cl.sterbe.app.documents.dto.profiles.Lenguage;
 import cl.sterbe.app.documents.models.profiles.*;
 import cl.sterbe.app.documents.models.users.Role;
 import cl.sterbe.app.documents.models.users.User;
@@ -17,6 +17,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import reactor.core.publisher.Flux;
 
 import java.util.Arrays;
@@ -41,6 +42,9 @@ public class SpringWebfluxApiApplication implements CommandLineRunner {
 	private RoleDAO roleDAO;
 
 	@Autowired
+	private PasswordEncoder passwordEncoder;
+
+	@Autowired
 	private ReactiveMongoTemplate reactiveMongoTemplate;
 
 	private Logger logger = LoggerFactory.getLogger(SpringWebfluxApiApplication.class);
@@ -54,7 +58,7 @@ public class SpringWebfluxApiApplication implements CommandLineRunner {
 		this.reactiveMongoTemplate.dropCollection("roles").subscribe();
 
 		Role role1 = new Role(null,"ROLE_MANAGER");
-		Role role2 = new Role(null,"ROLE_CLIENT");
+		Role role2 = new Role(null,"ROLE_USER");
 
 		User user1;
 		User user2;
@@ -91,13 +95,16 @@ public class SpringWebfluxApiApplication implements CommandLineRunner {
 		Flux.just(role1,role2)
 						.flatMap(roleDAO::save)
 								.doOnNext(r -> logger.info("Se creo el rol: " + r.getRole() + ", con el id: " + r.getId()))
-										.thenMany(Flux.just(user1 = new User(null,"rodrigo@gmail.com","123",Arrays.asList(role1),true,true,new Date(),null),
-																user2 = new User(null,"critiano@gmail.com","123",Arrays.asList(role2),true,true,new Date(),null),
-																user3 = new User(null,"leonel@gmail.com","123",Arrays.asList(role2),true,true,new Date(),null)
+										.thenMany(Flux.just(user1 = new User(null,"rodrigo@gmail.com",this.passwordEncoder.encode("123")
+																,Arrays.asList(role1,role2),true,true,new Date(),null),
+																user2 = new User(null,"cristiano@gmail.com",this.passwordEncoder.encode("123")
+																		,Arrays.asList(role2),true,true,new Date(),null),
+																user3 = new User(null,"leonel@gmail.com",this.passwordEncoder.encode("123")
+																		,Arrays.asList(role2),true,true,new Date(),null)
 														)
 														.flatMap(userService::save)
 														.doOnNext(u -> {
-															logger.info("Se crea el usuario " + u.getEmail() + ", con el id: " + u.getId());
+															logger.info("Se crea el usuario " + u.getEmail() + ", con el id: " + u.getId() + ", Password: " + u.getPassword());
 														}).thenMany(
 																Flux.just(
 																		new Profile(null,"Rodrigo","Lazo",contactInformation1,user1,
