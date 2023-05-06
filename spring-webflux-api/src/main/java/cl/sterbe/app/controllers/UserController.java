@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +22,7 @@ public class UserController {
     private UserService userService;
 
     @GetMapping
+    @PreAuthorize("hasRole('ROLE_MANAGER')")
     public Mono<ResponseEntity<Flux<User>>> getUsers(){
         return Mono.just(ResponseEntity
                 .status(HttpStatus.OK)
@@ -29,6 +31,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_MANAGER')")
     public Mono<ResponseEntity<Mono<User>>> getUser(@PathVariable String id){
         return Mono.just(ResponseEntity
                 .status(HttpStatus.OK)

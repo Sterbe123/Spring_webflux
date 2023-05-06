@@ -94,7 +94,7 @@ public class SpringWebfluxApiApplication implements CommandLineRunner {
 
 		Flux.just(role1,role2)
 						.flatMap(roleDAO::save)
-								.doOnNext(r -> logger.info("Se creo el rol: " + r.getRole() + ", con el id: " + r.getId()))
+								.doOnNext(r -> logger.info("Se creo el rol: " + r.getName() + ", con el id: " + r.getId()))
 										.thenMany(Flux.just(user1 = new User(null,"rodrigo@gmail.com",this.passwordEncoder.encode("123")
 																,Arrays.asList(role1,role2),true,true,new Date(),null),
 																user2 = new User(null,"cristiano@gmail.com",this.passwordEncoder.encode("123")

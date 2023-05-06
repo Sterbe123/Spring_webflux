@@ -4,12 +4,9 @@ import cl.sterbe.app.componets.security.TokenUtils;
 import cl.sterbe.app.documents.dao.users.RoleDAO;
 import cl.sterbe.app.documents.dao.users.UserDAO;
 import cl.sterbe.app.documents.dto.email.EmailMapper;
-import cl.sterbe.app.documents.models.users.Role;
 import cl.sterbe.app.documents.models.users.User;
 import cl.sterbe.app.exceptions.CustomException;
 import cl.sterbe.app.services.users.UserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -34,11 +31,6 @@ public class UserImplement implements UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private TokenUtils tokenUtils;
-
-    private Logger logger = LoggerFactory.getLogger(UserImplement.class);
-
     @Override
     public Flux<User> findAll() {
         return this.userDAO.findAll();
@@ -56,8 +48,10 @@ public class UserImplement implements UserService {
     }
 
     @Override
-    public Mono<Void> delete(User user) {
-        return this.userDAO.delete(user);
+    public Mono<Void> delete(String id) {
+        return this.userDAO.findById(id)
+                .flatMap(user -> this.userDAO.delete(user))
+                .switchIfEmpty(Mono.error(new CustomException("user not found", HttpStatus.NOT_FOUND)));
     }
 
     @Override
@@ -74,26 +68,32 @@ public class UserImplement implements UserService {
                     serverWebExchange
                             .getResponse()
                             .getHeaders()
-                            .add(HttpHeaders.AUTHORIZATION, this.tokenUtils.generateToken(new cl.sterbe.app.documents.models.oauth.User(user.getEmail()
-                                    ,user.getPassword(),user.getRoles())));
+                            .add(HttpHeaders.AUTHORIZATION, TokenUtils.generateToken(new cl.sterbe.app.documents
+                                    .models.oauth.User(user.getEmail()
+                                    ,user.getPassword(),user.getRoles())).block());
                     return user;
                 })
                 .switchIfEmpty(Mono.error(new CustomException("bad credentials", HttpStatus.BAD_REQUEST)));
     }
 
-    //TODO: arreglar esto.
     @Override
-    public Mono<User> register(User user) {
-        Role role = this.roleDAO.findOneByRole("ROLE_USER").block();
-        logger.info(role.getRole());
-        user.setStatus(true);
-        user.setVerified(false);
-        user.setCreateAt(new Date());
-        user.setRoles(Arrays.asList(role));
-        Mono<Boolean> userExists = this.userDAO.findOneByEmail(user.getEmail()).hasElement();
-        return userExists
-                .flatMap(exists -> exists?
-                        Mono.error(new CustomException("email already in use", HttpStatus.INTERNAL_SERVER_ERROR))
-                        : this.userDAO.save(user));
+    public Mono<User> register(EmailMapper emailMapper) {
+        return this.userDAO.findOneByEmail(emailMapper.getEmail()).hasElement()
+                .flatMap(exists -> {
+                    if (!exists){
+                         return this.roleDAO.findOneByName("ROLE_USER")
+                                .flatMap(r -> this.userDAO.save(new User(
+                                            null,
+                                            emailMapper.getEmail(),
+                                            this.passwordEncoder.encode(emailMapper.getPassword()),
+                                            Arrays.asList(r),
+                                            true,
+                                            true,
+                                            new Date(),
+                                            null
+                                    )));
+                    }
+                    return Mono.error(new CustomException("email already in use", HttpStatus.INTERNAL_SERVER_ERROR));
+                });
     }
 }

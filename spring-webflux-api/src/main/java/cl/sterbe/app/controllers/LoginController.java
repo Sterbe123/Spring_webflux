@@ -14,8 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/auth")
 public class LoginController {
@@ -25,7 +23,6 @@ public class LoginController {
 
     @PostMapping("/login")
     public Mono<ResponseEntity<Mono<User>>> login(@RequestBody EmailMapper emailMapper, ServerWebExchange serverWebExchange) {
-
         return Mono.just(ResponseEntity
                 .status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -33,11 +30,10 @@ public class LoginController {
     }
 
     @PostMapping("/register")
-    public Mono<ResponseEntity<Mono<User>>> register(@RequestBody User user){
-
+    public Mono<ResponseEntity<Mono<User>>> register(@RequestBody EmailMapper emailMapper){
         return Mono.just(ResponseEntity
                 .status(HttpStatus.CREATED)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(this.userService.register(user)));
+                .body(this.userService.register(emailMapper)));
     }
 }
