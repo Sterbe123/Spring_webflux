@@ -1,15 +1,13 @@
 package cl.sterbe.app.controllers;
 
 import cl.sterbe.app.documents.models.profiles.Profile;
+import cl.sterbe.app.exceptions.CustomListException;
 import cl.sterbe.app.services.profiles.ProfileService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.support.WebExchangeBindException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -21,18 +19,23 @@ public class ProfileController {
     private ProfileService profileService;
 
     @GetMapping
-    public Mono<ResponseEntity<Flux<Profile>>> getProfiles(){
-        return Mono.just(ResponseEntity
-                .status(HttpStatus.OK)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(this.profileService.findAll()));
+    @ResponseStatus(HttpStatus.OK)
+    public Flux<Profile> getProfiles(){
+        return this.profileService.findAll();
     }
 
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<Mono<Profile>>> getProfile(@PathVariable String id){
-        return Mono.just(ResponseEntity
-                .status(HttpStatus.OK)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(this.profileService.findById(id)));
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<Profile> getProfile(@PathVariable String id){
+        return this.profileService.findById(id);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<Profile> save(@Valid @RequestBody Mono<Profile> profile){
+        return profile
+                .flatMap(p -> this.profileService.save(p))
+                .onErrorResume(error -> Mono.error(new CustomListException(Mono.just(error)
+                        .cast(WebExchangeBindException.class))));
     }
 }

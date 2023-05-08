@@ -1,10 +1,9 @@
 package cl.sterbe.app.componets.security;
 
-import cl.sterbe.app.exceptions.CustomException;
+import cl.sterbe.app.exceptions.TokenError;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import reactor.core.publisher.Mono;
 import java.util.Date;
@@ -33,6 +32,6 @@ public class TokenUtils {
                     .parseClaimsJws(token)
                     .getBody();
             return claims;
-        }).onErrorMap(e -> new CustomException("bad token", HttpStatus.UNAUTHORIZED));
+        }).onErrorResume(error -> Mono.error(new TokenError("token invalid")));
     }
 }

@@ -16,8 +16,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
-import java.util.Date;
+import java.util.*;
 
 @Service
 public class UserImplement implements UserService {
@@ -70,30 +69,30 @@ public class UserImplement implements UserService {
                             .getHeaders()
                             .add(HttpHeaders.AUTHORIZATION, TokenUtils.generateToken(new cl.sterbe.app.documents
                                     .models.oauth.User(user.getEmail()
-                                    ,user.getPassword(),user.getRoles())).block());
+                                    ,null,user.getRoles())).block());
                     return user;
                 })
                 .switchIfEmpty(Mono.error(new CustomException("bad credentials", HttpStatus.BAD_REQUEST)));
     }
 
     @Override
-    public Mono<User> register(EmailMapper emailMapper) {
+    public Mono<Map<String,Object>> register(EmailMapper emailMapper) {
         return this.userDAO.findOneByEmail(emailMapper.getEmail()).hasElement()
-                .flatMap(exists -> {
-                    if (!exists){
-                         return this.roleDAO.findOneByName("ROLE_USER")
-                                .flatMap(r -> this.userDAO.save(new User(
-                                            null,
-                                            emailMapper.getEmail(),
-                                            this.passwordEncoder.encode(emailMapper.getPassword()),
-                                            Arrays.asList(r),
-                                            true,
-                                            true,
-                                            new Date(),
-                                            null
-                                    )));
-                    }
-                    return Mono.error(new CustomException("email already in use", HttpStatus.INTERNAL_SERVER_ERROR));
-                });
+                .flatMap(exists -> exists? Mono.error(new CustomException("email already in use", HttpStatus.INTERNAL_SERVER_ERROR))
+                        : this.roleDAO.findOneByName("ROLE_USER")
+                                .flatMap(role -> this.userDAO.save(new User(
+                                        null,
+                                        emailMapper.getEmail(),
+                                        emailMapper.getPassword(),
+                                        Collections.singletonList(role),
+                                        true,
+                                        false,
+                                        new Date(),
+                                        null
+                                )))
+                        .map(user -> Map.of("user",user,
+                                "token", Objects.requireNonNull(TokenUtils.generateToken(new cl.sterbe.app.documents
+                                        .models.oauth.User(user.getEmail()
+                                        , null, user.getRoles())).block()))));
     }
 }
