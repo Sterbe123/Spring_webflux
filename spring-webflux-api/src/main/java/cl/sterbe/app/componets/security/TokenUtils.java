@@ -1,6 +1,6 @@
 package cl.sterbe.app.componets.security;
 
-import cl.sterbe.app.exceptions.TokenError;
+import cl.sterbe.app.exceptions.TokenErrorException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -32,6 +32,6 @@ public class TokenUtils {
                     .parseClaimsJws(token)
                     .getBody();
             return claims;
-        }).onErrorResume(error -> Mono.error(new TokenError("token invalid")));
+        }).onErrorResume(error -> Mono.error(new TokenErrorException("token invalid")));
     }
 }

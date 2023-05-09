@@ -5,11 +5,15 @@ import cl.sterbe.app.documents.dao.users.RoleDAO;
 import cl.sterbe.app.documents.dao.users.UserDAO;
 import cl.sterbe.app.documents.dto.email.EmailMapper;
 import cl.sterbe.app.documents.models.users.User;
-import cl.sterbe.app.exceptions.CustomException;
+import cl.sterbe.app.exceptions.BadCredentialsException;
+import cl.sterbe.app.exceptions.EmailAlreadyExistsException;
+import cl.sterbe.app.exceptions.SamePasswordsException;
+import cl.sterbe.app.exceptions.UserNotFoundException;
 import cl.sterbe.app.services.users.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ServerWebExchange;
@@ -30,6 +34,8 @@ public class UserImplement implements UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    private Logger logger = LoggerFactory.getLogger(UserImplement.class);
+
     @Override
     public Flux<User> findAll() {
         return this.userDAO.findAll();
@@ -38,7 +44,7 @@ public class UserImplement implements UserService {
     @Override
     public Mono<User> findById(String id) {
         return this.userDAO.findById(id)
-                .switchIfEmpty(Mono.error(new CustomException("user not found", HttpStatus.NOT_FOUND)));
+                .switchIfEmpty(Mono.error(new UserNotFoundException()));
     }
 
     @Override
@@ -50,13 +56,13 @@ public class UserImplement implements UserService {
     public Mono<Void> delete(String id) {
         return this.userDAO.findById(id)
                 .flatMap(user -> this.userDAO.delete(user))
-                .switchIfEmpty(Mono.error(new CustomException("user not found", HttpStatus.NOT_FOUND)));
+                .switchIfEmpty(Mono.error(new UserNotFoundException()));
     }
 
     @Override
     public Mono<User> findOneByEmail(String email) {
         return this.userDAO.findOneByEmail(email)
-                .switchIfEmpty(Mono.error(new CustomException("user not found", HttpStatus.NOT_FOUND)));
+                .switchIfEmpty(Mono.error(new UserNotFoundException()));
     }
 
     @Override
@@ -72,18 +78,35 @@ public class UserImplement implements UserService {
                                     ,null,user.getRoles())).block());
                     return user;
                 })
-                .switchIfEmpty(Mono.error(new CustomException("bad credentials", HttpStatus.BAD_REQUEST)));
+                .switchIfEmpty(Mono.error(new BadCredentialsException()));
     }
 
     @Override
     public Mono<Map<String,Object>> register(EmailMapper emailMapper) {
+
         return this.userDAO.findOneByEmail(emailMapper.getEmail()).hasElement()
-                .flatMap(exists -> exists? Mono.error(new CustomException("email already in use", HttpStatus.INTERNAL_SERVER_ERROR))
+                .filter(exists -> !exists)
+                .flatMap(user -> this.roleDAO.findOneByName("ROLE_USER")
+                        .flatMap(role ->
+                             this.userDAO.save(new User(
+                                    null,
+                                    emailMapper.getEmail(),
+                                    this.passwordEncoder.encode(emailMapper.getPassword()),
+                                    Collections.singletonList(role),
+                                    true,false, new Date(), null))
+                                    .map(u -> Map.of("user", u,
+                                            "token", Objects.requireNonNull(TokenUtils.generateToken
+                                                    (new cl.sterbe.app.documents.models.oauth.User(u.getEmail(),
+                                                            null, u.getRoles())).block())))))
+                .switchIfEmpty(Mono.error(new EmailAlreadyExistsException()));
+
+    /*    return this.userDAO.findOneByEmail(emailMapper.getEmail()).hasElement()
+                .flatMap(exists -> exists?Mono.error(new EmailAlreadyExistsException())
                         : this.roleDAO.findOneByName("ROLE_USER")
                                 .flatMap(role -> this.userDAO.save(new User(
                                         null,
                                         emailMapper.getEmail(),
-                                        emailMapper.getPassword(),
+                                        this.passwordEncoder.encode(emailMapper.getPassword()),
                                         Collections.singletonList(role),
                                         true,
                                         false,
@@ -93,6 +116,19 @@ public class UserImplement implements UserService {
                         .map(user -> Map.of("user",user,
                                 "token", Objects.requireNonNull(TokenUtils.generateToken(new cl.sterbe.app.documents
                                         .models.oauth.User(user.getEmail()
-                                        , null, user.getRoles())).block()))));
+                                        , null, user.getRoles())).block()))));  */
+    }
+
+    @Override
+    public Mono<User> updatePassword(EmailMapper emailMapper) {
+        return this.userDAO.findOneByEmail(emailMapper.getEmail())
+                .flatMap(user -> this.passwordEncoder.matches(emailMapper.getPassword(), user.getPassword())
+                            ?Mono.error(new SamePasswordsException())
+                            :Mono.just(user))
+                .map(user -> {
+                    user.setPassword(this.passwordEncoder.encode(emailMapper.getPassword()));
+                    return user;
+                })
+                .switchIfEmpty(Mono.error(new BadCredentialsException()));
     }
 }

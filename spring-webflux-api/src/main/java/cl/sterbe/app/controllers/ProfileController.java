@@ -1,13 +1,12 @@
 package cl.sterbe.app.controllers;
 
 import cl.sterbe.app.documents.models.profiles.Profile;
-import cl.sterbe.app.exceptions.CustomListException;
+import cl.sterbe.app.exceptions.WebExchangeException;
 import cl.sterbe.app.services.profiles.ProfileService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.support.WebExchangeBindException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -35,7 +34,6 @@ public class ProfileController {
     public Mono<Profile> save(@Valid @RequestBody Mono<Profile> profile){
         return profile
                 .flatMap(p -> this.profileService.save(p))
-                .onErrorResume(error -> Mono.error(new CustomListException(Mono.just(error)
-                        .cast(WebExchangeBindException.class))));
+                .onErrorResume(error -> Mono.error(new WebExchangeException(Mono.just(error))));
     }
 }

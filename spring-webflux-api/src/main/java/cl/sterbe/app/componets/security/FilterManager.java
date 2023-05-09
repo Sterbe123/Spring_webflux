@@ -1,6 +1,7 @@
 package cl.sterbe.app.componets.security;
 
 import cl.sterbe.app.exceptions.CustomException;
+import cl.sterbe.app.exceptions.TokenErrorException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -24,11 +25,11 @@ public class FilterManager implements WebFilter {
             String auth = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
             if(auth == null){
-                throw new CustomException("no token was found", HttpStatus.NOT_FOUND);
+                throw new TokenErrorException("no token was found");
             }
 
             if(!auth.startsWith("Bearer ")){
-                throw new CustomException("invalid auth", HttpStatus.BAD_REQUEST);
+                throw new TokenErrorException("invalid auth");
             }
 
             String token = auth.replace("Bearer ","");

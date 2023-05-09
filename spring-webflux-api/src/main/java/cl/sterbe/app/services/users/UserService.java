@@ -23,4 +23,6 @@ public interface UserService {
     Mono<User> login(EmailMapper emailMapper, ServerWebExchange serverWebExchange);
 
     Mono<Map<String,Object>> register(EmailMapper emailMapper);
+
+    Mono<User> updatePassword(EmailMapper emailMapper);
 }
