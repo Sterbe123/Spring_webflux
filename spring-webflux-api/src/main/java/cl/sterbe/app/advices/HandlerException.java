@@ -29,7 +29,7 @@ public class HandlerException {
     @ExceptionHandler(SamePasswordsException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Mono<Map<String,String>> samePasswords(SamePasswordsException e){
-        return Mono.just(Map.of("error", ""));
+        return Mono.just(Map.of("error", "the password must not be the same as the previous one"));
     }
 
     @ExceptionHandler(UserNotFoundException.class)
@@ -44,6 +44,12 @@ public class HandlerException {
         return Mono.just(Map.of("error", "bad credentials"));
     }
 
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Mono<Map<String,String>> emailAlreadyExistsException(EmailAlreadyExistsException e){
+        return Mono.just(Map.of("error", "email already exists"));
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public Mono<List<String>> exception(Exception e){
@@ -54,5 +60,11 @@ public class HandlerException {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Mono<List<String>> tokenError(TokenErrorException e){
         return Mono.just(Collections.singletonList(e.getMessage()));
+    }
+
+    @ExceptionHandler(NotUpdateResourceException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Mono<Map<String,String>> notUpdateResource(NotUpdateResourceException e){
+        return Mono.just(Map.of("error", "you can't update this resource"));
     }
 }

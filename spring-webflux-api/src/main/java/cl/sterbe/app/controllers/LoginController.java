@@ -2,7 +2,6 @@ package cl.sterbe.app.controllers;
 
 import cl.sterbe.app.documents.dto.email.EmailMapper;
 import cl.sterbe.app.documents.models.users.User;
-import cl.sterbe.app.exceptions.CustomException;
 import cl.sterbe.app.exceptions.WebExchangeException;
 import cl.sterbe.app.services.users.UserService;
 import jakarta.validation.Valid;
@@ -14,7 +13,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/auth")
@@ -30,7 +28,7 @@ public class LoginController {
                 .flatMap(email -> this.userService.login(email, serverWebExchange))
                 .onErrorResume(error -> error instanceof WebExchangeBindException
                         ?Mono.error(new WebExchangeException(Mono.just(error)))
-                        :Mono.error(Objects.requireNonNull(CustomException.castException(error).block())));
+                        :Mono.error(error));
     }
 
     @PostMapping("/register")
@@ -40,6 +38,6 @@ public class LoginController {
                 .flatMap(email -> this.userService.register(email))
                 .onErrorResume(error -> error instanceof WebExchangeBindException
                         ?Mono.error(new WebExchangeException(Mono.just(error)))
-                        :Mono.error(Objects.requireNonNull(CustomException.castException(error).block())));
+                        :Mono.error(error));
     }
 }

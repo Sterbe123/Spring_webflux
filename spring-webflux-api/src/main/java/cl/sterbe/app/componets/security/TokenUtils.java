@@ -2,6 +2,7 @@ package cl.sterbe.app.componets.security;
 
 import cl.sterbe.app.exceptions.TokenErrorException;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,13 +26,19 @@ public class TokenUtils {
     }
 
     public static Mono<Claims> authenticationToken(String token) {
-        return Mono.fromCallable(() -> {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(ACCESO_TOKEN_SECRETO.getBytes())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            return claims;
-        }).onErrorResume(error -> Mono.error(new TokenErrorException("token invalid")));
+        return Mono.just(token)
+                .flatMap(t -> {
+                    try {
+                        Claims claims = Jwts.parserBuilder()
+                                .setSigningKey(ACCESO_TOKEN_SECRETO.getBytes())
+                                .build()
+                                .parseClaimsJws(token)
+                                .getBody();
+                        return Mono.just(claims);
+                    }catch (JwtException e){
+                        return Mono.error(new TokenErrorException("token invalid"));
+                    }
+                })
+                .onErrorResume(Mono::error);
     }
 }

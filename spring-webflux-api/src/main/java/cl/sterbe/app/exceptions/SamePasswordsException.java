@@ -6,6 +6,4 @@ import lombok.Setter;
 @Setter
 @Getter
 public class SamePasswordsException extends Exception{
-
-    public SamePasswordsException(){}
 }

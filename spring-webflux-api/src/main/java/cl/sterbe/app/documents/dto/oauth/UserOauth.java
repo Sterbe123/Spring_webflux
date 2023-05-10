@@ -1,4 +1,4 @@
-package cl.sterbe.app.documents.models.oauth;
+package cl.sterbe.app.documents.dto.oauth;
 
 import cl.sterbe.app.documents.models.users.Role;
 import lombok.AllArgsConstructor;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @AllArgsConstructor
-public class User implements UserDetails {
+public class UserOauth implements UserDetails {
 
     private String email;
 
