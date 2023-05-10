@@ -25,4 +25,8 @@ public interface UserService {
     Mono<Map<String,Object>> register(EmailMapper emailMapper);
 
     Mono<User> updatePassword(EmailMapper emailMapper);
+
+    Mono<String> validateAccount(String token);
+
+    Mono<Map<String,String>> reSendToken(String email);
 }

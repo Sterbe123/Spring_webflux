@@ -4,7 +4,7 @@ import cl.sterbe.app.componets.security.TokenUtils;
 import cl.sterbe.app.documents.dao.users.RoleDAO;
 import cl.sterbe.app.documents.dao.users.UserDAO;
 import cl.sterbe.app.documents.dto.email.EmailMapper;
-import cl.sterbe.app.documents.dto.oauth.UserOauth;
+import cl.sterbe.app.documents.dto.oauth.UserAuth;
 import cl.sterbe.app.documents.models.users.User;
 import cl.sterbe.app.exceptions.*;
 import cl.sterbe.app.services.users.UserService;
@@ -64,7 +64,9 @@ public class UserImplement implements UserService {
     public Mono<User> login(EmailMapper emailMapper, ServerWebExchange serverWebExchange) {
         return this.userDAO.findOneByEmail(emailMapper.getEmail())
                 .filter(user -> this.passwordEncoder.matches(emailMapper.getPassword(), user.getPassword()))
-                .flatMap(user -> TokenUtils.generateToken(new UserOauth(user.getEmail(),null,user.getRoles()))
+                .flatMap(user -> user.isStatus()?Mono.just(user):Mono.error(new DisabledUserException()))
+                .flatMap(user -> TokenUtils.generateToken(new UserAuth(user.getEmail(),null,user.getRoles()),
+                                60)
                             .flatMap(token -> {
                                  serverWebExchange
                                         .getResponse()
@@ -86,8 +88,8 @@ public class UserImplement implements UserService {
                                         this.passwordEncoder.encode(emailMapper.getPassword()),
                                         Collections.singletonList(role), true,
                                         false, new Date(), null))
-                                        .flatMap(user -> TokenUtils.generateToken(new UserOauth(
-                                                    user.getEmail(), null, user.getRoles()))
+                                        .flatMap(user -> TokenUtils.generateToken(new UserAuth(
+                                                    user.getEmail(), null, user.getRoles()), 5)
                                                     .map(token -> Map.of("user",
                                                             user, "token verification", token)))));
     }
@@ -106,6 +108,31 @@ public class UserImplement implements UserService {
                     user.setUpdateAt(new Date());
                     return this.userDAO.save(user);
                 })
+                .switchIfEmpty(Mono.error(new BadCredentialsException()));
+    }
+
+    @Override
+    public Mono<String> validateAccount(String token) {
+        return TokenUtils.authenticationToken(token)
+                .flatMap(claims -> this.userDAO.findOneByEmail(claims.getSubject())
+                        .flatMap(user -> user.isVerified()?Mono.error(new ErrorValidatingAccountException()):Mono.just(user))
+                        .flatMap(user -> {
+                            user.setVerified(true);
+                            return this.userDAO.save(user)
+                                    .flatMap(u -> Mono.just("Verified account"));
+                        })
+                .switchIfEmpty(Mono.error(new BadCredentialsException())));
+
+    }
+
+    @Override
+    public Mono<Map<String, String>> reSendToken(String email) {
+        return this.userDAO.findOneByEmail(email)
+                .flatMap(user -> user.isVerified()?Mono.error(new ErrorValidatingAccountException())
+                        :Mono.just(user))
+                .flatMap(user -> TokenUtils.generateToken(new UserAuth(
+                        user.getEmail(),null,user.getRoles()), 5))
+                        .map(token -> Map.of("token verification", token))
                 .switchIfEmpty(Mono.error(new BadCredentialsException()));
     }
 }

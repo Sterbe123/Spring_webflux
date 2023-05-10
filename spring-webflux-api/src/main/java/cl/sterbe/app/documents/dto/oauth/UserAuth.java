@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @AllArgsConstructor
-public class UserOauth implements UserDetails {
+public class UserAuth implements UserDetails {
 
     private String email;
 

@@ -42,6 +42,7 @@ public class SecurityConfig {
                 .securityContextRepository(serverSecurityContext)
                 .authorizeExchange()
                 .pathMatchers(HttpMethod.POST, "/auth/**").permitAll()
+                .pathMatchers(HttpMethod.GET, "/auth/**").permitAll()
                 .anyExchange()
                 .authenticated()
                 .and().build();

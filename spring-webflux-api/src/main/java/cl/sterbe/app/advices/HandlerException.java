@@ -67,4 +67,22 @@ public class HandlerException {
     public Mono<Map<String,String>> notUpdateResource(NotUpdateResourceException e){
         return Mono.just(Map.of("error", "you can't update this resource"));
     }
+
+    @ExceptionHandler(ErrorValidatingAccountException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Mono<Map<String,String>> errorValidatingAccount(ErrorValidatingAccountException e){
+        return Mono.just(Map.of("error", "error verifying account"));
+    }
+
+    @ExceptionHandler(DisabledUserException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Mono<Map<String,String>> disabledUser(DisabledUserException e){
+        return Mono.just(Map.of("error", "disabled user, contact administrator"));
+    }
+
+    @ExceptionHandler(NotAuthorizedException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Mono<Map<String,String>> notAuthorized(NotAuthorizedException e){
+        return Mono.just(Map.of("error", "your account is not authorized"));
+    }
 }
