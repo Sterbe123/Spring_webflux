@@ -1,4 +1,4 @@
-package cl.sterbe.app.documents.entity.profiles;
+package cl.sterbe.app.documents.dto.profiles;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

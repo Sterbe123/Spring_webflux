@@ -1,7 +1,7 @@
 package cl.sterbe.app.documents.models.publications;
 
-import cl.sterbe.app.documents.entity.interactions.Comment;
-import cl.sterbe.app.documents.entity.interactions.Like;
+import cl.sterbe.app.documents.dto.interactions.Comment;
+import cl.sterbe.app.documents.dto.interactions.Like;
 import cl.sterbe.app.documents.models.multimedias.Photo;
 import cl.sterbe.app.documents.models.multimedias.Video;
 import cl.sterbe.app.documents.models.profiles.Profile;

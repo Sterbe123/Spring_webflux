@@ -1,4 +1,4 @@
-package cl.sterbe.app.documents.entity.interactions;
+package cl.sterbe.app.documents.dto.interactions;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
