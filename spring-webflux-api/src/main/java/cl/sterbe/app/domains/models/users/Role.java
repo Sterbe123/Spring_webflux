@@ -17,7 +17,7 @@ public class Role {
 
     private String name;
 
-    public RoleDocument toDomainModel(){
-        return  new RoleDocument(this.id, this.name);
+    public Mono<RoleDocument> toDomainModel(){
+        return  Mono.just(new RoleDocument(this.id, this.name));
     }
 }

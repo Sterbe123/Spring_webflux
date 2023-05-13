@@ -18,19 +18,20 @@ public class RoleRepositoryAdapter implements RoleRepositoryPort {
     @Override
     public Flux<Role> findAll() {
         return this.roleRepository.findAll()
-                .map(RoleDocument::toDomainModel);
+                .flatMap(RoleDocument::toDomainModel);
     }
 
     @Override
     public Mono<Role> findById(String id) {
         return this.roleRepository.findById(id)
-                .map(RoleDocument::toDomainModel);
+                .flatMap(RoleDocument::toDomainModel);
     }
 
     @Override
     public Mono<Role> save(Role role) {
-        return this.roleRepository.save(role.toDomainModel())
-                .map(RoleDocument::toDomainModel);
+        return role.toDomainModel()
+                .flatMap(rol -> this.roleRepository.save(rol))
+                .flatMap(RoleDocument::toDomainModel);
     }
 
     @Override
@@ -41,6 +42,6 @@ public class RoleRepositoryAdapter implements RoleRepositoryPort {
     @Override
     public Mono<Role> findOneByName(String name) {
         return this.roleRepository.findOneByName(name)
-                .map(RoleDocument::toDomainModel);
+                .flatMap(RoleDocument::toDomainModel);
     }
 }

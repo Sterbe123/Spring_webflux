@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -47,10 +48,12 @@ public class User {
 
     public Mono<UserDocument> toDomainModel(){
         return Mono.fromCallable(() -> {
-            List<RoleDocument> roleDocuments = new ArrayList<>();
-            this.roles.forEach(r -> roleDocuments.add(r.toDomainModel()));
-            return new UserDocument(this.getId(), this.email, this.getPassword(), roleDocuments, this.isStatus(),
-                    this.isVerified(), this.getCreateAt(), this.getUpdateAt());
-        });
+            List<Mono<RoleDocument>> monoRoleDocuments = new ArrayList<>();
+            this.roles.forEach(r -> monoRoleDocuments.add(r.toDomainModel()));
+
+            return Flux.merge(monoRoleDocuments).collectList()
+                    .map(roleDocuments -> new UserDocument(this.getId(), this.email, this.password,
+                            roleDocuments, this.status, this.verified, this.createAt, this.updateAt));
+        }).flatMap(user -> user.flatMap(Mono::just));
     }
 }

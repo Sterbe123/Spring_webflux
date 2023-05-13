@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.format.annotation.DateTimeFormat;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -41,11 +42,12 @@ public class UserDocument {
 
     public Mono<User> toDomainModel(){
         return Mono.fromCallable(() -> {
-            List<Role> rolesModels = new ArrayList<>();
-            this.roles.forEach(r -> rolesModels.add(r.toDomainModel()));
+            List<Mono<Role>> monoRoleModels = new ArrayList<>();
+            this.roles.forEach(r -> monoRoleModels.add(r.toDomainModel()));
 
-            return new User(this.id, this.getEmail(), this.password, rolesModels,
-                    this.status, this.verified, this.createAt, this.updateAt);
-        });
+            return Flux.merge(monoRoleModels).collectList()
+                    .map(rolesModels ->  new User(this.id, this.getEmail(), this.password, rolesModels,
+                            this.status, this.verified, this.createAt, this.updateAt));
+        }).flatMap(user -> user.flatMap(Mono::just));
     }
 }

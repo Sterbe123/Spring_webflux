@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import reactor.core.publisher.Mono;
 
 @Getter
 @Setter
@@ -18,7 +19,7 @@ public class RoleDocument {
 
     private String name;
 
-    public Role toDomainModel(){
-        return new Role(this.id, this.name);
+    public Mono<Role> toDomainModel(){
+        return Mono.just(new Role(this.id, this.name));
     }
 }
