@@ -1,15 +1,12 @@
 package cl.sterbe.app;
 
-import cl.sterbe.app.documents.dao.users.RoleDAO;
-import cl.sterbe.app.documents.dto.profiles.ContactInformation;
-import cl.sterbe.app.documents.dto.profiles.Employment;
-import cl.sterbe.app.documents.dto.profiles.Home;
-import cl.sterbe.app.documents.dto.profiles.Lenguage;
-import cl.sterbe.app.documents.models.profiles.*;
-import cl.sterbe.app.documents.models.users.Role;
-import cl.sterbe.app.documents.models.users.User;
-import cl.sterbe.app.services.profiles.ProfileService;
-import cl.sterbe.app.services.users.UserService;
+import cl.sterbe.app.domains.models.profiles.*;
+import cl.sterbe.app.infrastructure.documents.profiles.ProfileDocument;
+import cl.sterbe.app.infrastructure.documents.users.RoleDocument;
+import cl.sterbe.app.infrastructure.documents.users.UserDocument;
+import cl.sterbe.app.infrastructure.repositories.profiles.ProfileRepository;
+import cl.sterbe.app.infrastructure.repositories.users.RoleRepository;
+import cl.sterbe.app.infrastructure.repositories.users.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import reactor.core.publisher.Flux;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 
 @SpringBootApplication
@@ -33,13 +31,13 @@ public class SpringWebfluxApiApplication implements CommandLineRunner {
 	//vamos a ingresar datos **********************
 
 	@Autowired
-	private UserService userService;
+	private UserRepository userRepository;
 
 	@Autowired
-	private ProfileService profileService;
+	private ProfileRepository profileRepository;
 
 	@Autowired
-	private RoleDAO roleDAO;
+	private RoleRepository roleRepository;
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
@@ -57,12 +55,12 @@ public class SpringWebfluxApiApplication implements CommandLineRunner {
 		this.reactiveMongoTemplate.dropCollection("profiles").subscribe();
 		this.reactiveMongoTemplate.dropCollection("roles").subscribe();
 
-		Role role1 = new Role(null,"ROLE_MANAGER");
-		Role role2 = new Role(null,"ROLE_USER");
+		RoleDocument role1 = new RoleDocument(null,"ROLE_MANAGER");
+		RoleDocument role2 = new RoleDocument(null,"ROLE_USER");
 
-		User user1;
-		User user2;
-		User user3;
+		UserDocument user1;
+		UserDocument user2;
+		UserDocument user3;
 
 		//-----------------------------------------------------------------------------------------------------------------------
 
@@ -93,26 +91,26 @@ public class SpringWebfluxApiApplication implements CommandLineRunner {
 		//-----------------------------------------------------------------------------------------------------
 
 		Flux.just(role1,role2)
-						.flatMap(roleDAO::save)
+						.flatMap(roleRepository::save)
 								.doOnNext(r -> logger.info("Se creo el rol: " + r.getName() + ", con el id: " + r.getId()))
-										.thenMany(Flux.just(user1 = new User(null,"rodrigo@gmail.com",this.passwordEncoder.encode("123")
+										.thenMany(Flux.just(user1 = new UserDocument(null,"rodrigo@gmail.com",this.passwordEncoder.encode("123")
 																,Arrays.asList(role1,role2),true,true,new Date(),null),
-																user2 = new User(null,"cristiano@gmail.com",this.passwordEncoder.encode("123")
-																		,Arrays.asList(role2),true,true,new Date(),null),
-																user3 = new User(null,"leonel@gmail.com",this.passwordEncoder.encode("123")
-																		,Arrays.asList(role2),true,true,new Date(),null)
+																user2 = new UserDocument(null,"cristiano@gmail.com",this.passwordEncoder.encode("123")
+																		,Collections.singletonList(role2),true,true,new Date(),null),
+																user3 = new UserDocument(null,"leonel@gmail.com",this.passwordEncoder.encode("123")
+																		,Collections.singletonList(role2),true,true,new Date(),null)
 														)
-														.flatMap(userService::save)
+														.flatMap(userRepository::save)
 														.doOnNext(u -> {
 															logger.info("Se crea el usuario " + u.getEmail() + ", con el id: " + u.getId() + ", Password: " + u.getPassword());
 														}).thenMany(
 																Flux.just(
-																		new Profile(null,"Rodrigo","Lazo",contactInformation1,user1,
-																				null,null,null,null,new Date()),
-																		new Profile(null,"Cristiano","Ronaldo",contactInformation2,user2,
-																				null,null,null,null,new Date()),
-																		new Profile(null,"Leonel","Messi",null,user3,
-																				null,null,null,null,new Date())
-																).flatMap(profileService::save))).subscribe();
+																		new ProfileDocument(null,"Rodrigo","Lazo",contactInformation1,user1,
+																				Collections.emptyList(),Collections.emptyList(),Collections.emptyList(),Collections.emptyList(),new Date()),
+																		new ProfileDocument(null,"Cristiano","Ronaldo",contactInformation2,user2,
+																				Collections.emptyList(),Collections.emptyList(),Collections.emptyList(),Collections.emptyList(),new Date()),
+																		new ProfileDocument(null,"Leonel","Messi",null,user3,
+																				Collections.emptyList(),Collections.emptyList(),Collections.emptyList(),Collections.emptyList(),new Date())
+																).flatMap(profileRepository::save))).subscribe();
 	}
 }
